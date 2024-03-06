@@ -977,7 +977,7 @@ pub const IO = struct {
 
     /// Opens a directory with read only access.
     pub fn open_dir(dir_path: []const u8) !os.fd_t {
-        return os.open(dir_path, os.O.CLOEXEC | os.O.RDONLY, 0);
+        return os.open(dir_path, os.O{ .ACCMODE = .RDONLY, .CLOEXEC = true }, 0);
     }
 
     pub const INVALID_FILE: os.fd_t = -1;
@@ -1001,7 +1001,7 @@ pub const IO = struct {
         // Be careful with openat(2): "If pathname is absolute, then dirfd is ignored." (man page)
         assert(!std.fs.path.isAbsolute(relative_path));
 
-        var flags: u32 = os.O.CLOEXEC | os.O.RDWR | os.O.DSYNC;
+        var flags = os.O{ .CLOEXEC = true, .ACCMODE = .RDWR, .DSYNC = true };
         var mode: os.mode_t = 0;
 
         const kind: enum { file, block_device } = blk: {
@@ -1042,7 +1042,7 @@ pub const IO = struct {
             .block_device => {
                 if (constants.direct_io) {
                     // Block devices should always support Direct IO.
-                    flags |= os.O.DIRECT;
+                    flags.DIRECT = true;
                     // Use O_EXCL when opening as a block device to obtain an advisory exclusive
                     // lock. Normally, you can't do this for files you don't create, but for
                     // block devices this guarantees:
@@ -1055,13 +1055,13 @@ pub const IO = struct {
                     // This should be stronger than flock(2) locks, which work on a separate system.
                     // The relevant kernel code (as of v6.7) is here:
                     // <https://github.com/torvalds/linux/blob/7da71072e1d6967c0482abcbb5991ffb5953fdf2/block/bdev.c#L932>
-                    flags |= os.O.EXCL;
+                    flags.EXCL = true;
                 }
                 log.info("opening block device \"{s}\"...", .{relative_path});
             },
             .file => {
                 var direct_io_supported = false;
-                var dir_on_tmpfs = try fs_is_tmpfs(dir_fd);
+                const dir_on_tmpfs = try fs_is_tmpfs(dir_fd);
 
                 if (dir_on_tmpfs) {
                     log.warn(
@@ -1077,7 +1077,7 @@ pub const IO = struct {
                 if (constants.direct_io and !dir_on_tmpfs) {
                     direct_io_supported = try fs_supports_direct_io(dir_fd);
                     if (direct_io_supported) {
-                        flags |= os.O.DIRECT;
+                        flags.DIRECT = true;
                     } else if (!constants.direct_io_required) {
                         log.warn("file system does not support Direct I/O", .{});
                     } else {
@@ -1089,13 +1089,13 @@ pub const IO = struct {
 
                 switch (method) {
                     .create => {
-                        flags |= os.O.CREAT;
-                        flags |= os.O.EXCL;
+                        flags.CREAT = true;
+                        flags.EXCL = true;
                         mode = 0o666;
                         log.info("creating \"{s}\"...", .{relative_path});
                     },
                     .create_or_open => {
-                        flags |= os.O.CREAT;
+                        flags.CREAT = true;
                         mode = 0o666;
                         log.info("opening or creating \"{s}\"...", .{relative_path});
                     },
@@ -1107,7 +1107,7 @@ pub const IO = struct {
         }
 
         // This is critical as we rely on O_DSYNC for fsync() whenever we write to the file:
-        assert((flags & os.O.DSYNC) > 0);
+        assert(flags.DSYNC);
 
         const fd = try os.openat(dir_fd, relative_path, flags, mode);
         // TODO Return a proper error message when the path exists or does not exist (init/start).

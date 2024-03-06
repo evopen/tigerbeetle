@@ -20,7 +20,7 @@ pub fn ManifestLevelType(
     comptime TableInfo: type,
     comptime table_count_max: u32,
 ) type {
-    comptime assert(std.meta.trait.isIntegral(Key));
+    comptime assert(@typeInfo(Key) == .Int);
 
     return struct {
         const Self = @This();

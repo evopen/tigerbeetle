@@ -32,12 +32,12 @@ const Message = @import("message_pool.zig").MessagePool.Message;
 pub const output = std.log.scoped(.cluster);
 const log = std.log.scoped(.simulator);
 
-pub const std_options = struct {
-    /// The -Dsimulator-log=<full|short> build option selects two logging modes.
-    /// In "short" mode, only state transitions are printed (see `Cluster.log_replica`).
-    /// "full" mode is the usual logging according to the level.
-    pub const log_level: std.log.Level = if (vsr_simulator_options.log == .short) .info else .debug;
-    pub const logFn = log_override;
+pub const std_options = std.Options{
+    // The -Dsimulator-log=<full|short> build option selects two logging modes.
+    // In "short" mode, only state transitions are printed (see `Cluster.log_replica`).
+    // "full" mode is the usual logging according to the level.
+    .log_level = if (vsr_simulator_options.log == .short) .info else .debug,
+    .logFn = log_override,
 };
 
 // Uncomment if you need per-scope control over the log levels.

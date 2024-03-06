@@ -35,8 +35,8 @@ const flags = @import("./flags.zig");
 const assert = std.debug.assert;
 
 const log = std.log;
-pub const std_options = struct {
-    pub const log_level: std.log.Level = .info;
+pub const std_options = std.Options{
+    .log_level = .info,
 };
 
 const CliArgs = union(enum) {

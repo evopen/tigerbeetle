@@ -81,7 +81,7 @@ pub fn ForestType(comptime _Storage: type, comptime groove_cfg: anytype) type {
 
     const TreeInfo = struct {
         Tree: type,
-        tree_name: []const u8,
+        tree_name: [:0]const u8,
         tree_id: u16,
         groove_name: []const u8,
         groove_tree: union(enum) { objects, ids, indexes: []const u8 },

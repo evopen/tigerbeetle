@@ -25,9 +25,9 @@ const Operation = StateMachine.Operation;
 const constants = @import("../../../constants.zig");
 const vsr = @import("../../../vsr.zig");
 
-pub const std_options = struct {
+pub const std_options = std.Options{
     // Since this is running in application space, log only critical messages to reduce noise.
-    pub const log_level: std.log.Level = .err;
+    .log_level = .err,
 };
 
 // Cached value for JS (null).

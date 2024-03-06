@@ -69,24 +69,29 @@ fn format(allocator: std.mem.Allocator, options: struct {
     tigerbeetle: []const u8,
     data_file: []const u8,
 }) !void {
-    const format_result = try ChildProcess.exec(.{
-        .allocator = allocator,
-        .argv = &.{
-            options.tigerbeetle,
-            "format",
-            "--cluster=0",
-            "--replica=0",
-            "--replica-count=1",
-            options.data_file,
-        },
-    });
-    defer {
-        allocator.free(format_result.stdout);
-        allocator.free(format_result.stderr);
-    }
-    errdefer log.err("stderr: {s}", .{format_result.stderr});
+    var format_result = ChildProcess.init(&.{
+        options.tigerbeetle,
+        "format",
+        "--cluster=0",
+        "--replica=0",
+        "--replica-count=1",
+        options.data_file,
+    }, allocator);
+    format_result.stderr_behavior = .Pipe;
+    format_result.stdout_behavior = .Pipe;
+    var stdout = std.ArrayList(u8).init(allocator);
+    var stderr = std.ArrayList(u8).init(allocator);
+    defer stderr.deinit();
+    defer stdout.deinit();
 
-    switch (format_result.term) {
+    try format_result.spawn();
+
+    try format_result.collectOutput(&stdout, &stderr, 1024 * 1024 * 5);
+    const term = try format_result.wait();
+
+    errdefer log.err("stderr: {s}", .{stderr.items});
+
+    switch (term) {
         .Exited => |code| if (code != 0) return error.BadFormat,
         else => return error.BadFormat,
     }

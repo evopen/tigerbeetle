@@ -360,7 +360,7 @@ fn create_report(allocator: mem.Allocator, bug: Bug, seed: u64) Report {
     };
 
     // Zig stores value as Little Endian when VOPR Hub is expecting Big Endian.
-    assert(@import("builtin").target.cpu.arch.endian() == .Little);
+    assert(@import("builtin").target.cpu.arch.endian() == .little);
 
     var message = Report{
         .checksum = undefined,

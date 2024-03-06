@@ -61,7 +61,7 @@ fn to_pascal_case(comptime input: []const u8, comptime min_len: ?usize) []const 
             if (is_upper_case(word)) {
                 _ = std.ascii.upperString(output[len..], word);
             } else {
-                std.mem.copy(u8, output[len..], word);
+                @memcpy(output[len..], word);
                 output[len] = std.ascii.toUpper(output[len]);
             }
             len += word.len;

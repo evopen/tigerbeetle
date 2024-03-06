@@ -285,7 +285,7 @@ pub fn find(shell: *Shell, options: FindOptions) ![]const []const u8 {
     var result = std.ArrayList([]const u8).init(shell.arena.allocator());
 
     for (options.where) |base_path| {
-        var base_dir = try shell.cwd.openIterableDir(base_path, .{});
+        var base_dir = try shell.cwd.openDir(base_path, .{});
         defer base_dir.close();
 
         var walker = try base_dir.walk(shell.gpa);
@@ -402,15 +402,11 @@ pub fn exec_status_ok(shell: *Shell, comptime cmd: []const u8, cmd_args: anytype
     var buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
     const cwd_path = try shell.cwd.realpath(".", &buffer);
 
-    const res = std.ChildProcess.exec(.{
-        .allocator = shell.gpa,
-        .argv = argv.slice(),
-        .cwd = cwd_path,
-    }) catch return false;
-    defer shell.gpa.free(res.stderr);
-    defer shell.gpa.free(res.stdout);
+    var child = std.ChildProcess.init(argv.slice(), shell.gpa);
+    child.cwd = cwd_path;
+    const term = try child.spawnAndWait();
 
-    return switch (res.term) {
+    return switch (term) {
         .Exited => |code| code == 0,
         else => false,
     };
