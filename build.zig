@@ -57,7 +57,7 @@ pub fn build(b: *std.Build) !void {
 
     const options = b.addOptions();
 
-    var shell = Shell.create(b.allocator) catch unreachable;
+    var shell = Shell.create(b.allocator, b.build_root.handle) catch unreachable;
     defer shell.destroy();
 
     // The "tigerbeetle version" command includes the build-time commit hash.
@@ -1050,7 +1050,7 @@ const ShellcheckStep = struct {
     fn make(step: *std.Build.Step, _: *std.Progress.Node) anyerror!void {
         const self = @fieldParentPtr(ShellcheckStep, "step", step);
 
-        var shell = try Shell.create(self.gpa);
+        var shell = try Shell.create(self.gpa, step.owner.build_root.handle);
         defer shell.destroy();
 
         if (!try shell.exec_status_ok("shellcheck --version", .{})) {
@@ -1102,7 +1102,7 @@ const GitCloneStep = struct {
     fn make(step: *std.Build.Step, _: *std.Progress.Node) anyerror!void {
         const self = @fieldParentPtr(GitCloneStep, "step", step);
 
-        var shell = try Shell.create(self.gpa);
+        var shell = try Shell.create(self.gpa, step.owner.build_root.handle);
         defer shell.destroy();
 
         if (try shell.dir_exists(self.options.path)) return;

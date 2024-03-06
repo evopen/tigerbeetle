@@ -51,11 +51,11 @@ env: std.process.EnvMap,
 /// True if the process is run in CI (the CI env var is set)
 ci: bool,
 
-pub fn create(gpa: std.mem.Allocator) !*Shell {
+pub fn create(gpa: std.mem.Allocator, build_root: std.fs.Dir) !*Shell {
     var arena = std.heap.ArenaAllocator.init(gpa);
     errdefer arena.deinit();
 
-    var project_root = try discover_project_root();
+    var project_root = try discover_project_root(build_root);
     errdefer project_root.close();
 
     var cwd = try project_root.openDir(".", .{});
@@ -798,7 +798,7 @@ test "shell: expand_argv" {
 /// Finds the root of TigerBeetle repo.
 ///
 /// Caller is responsible for closing the dir.
-fn discover_project_root() !std.fs.Dir {
+fn discover_project_root(start_dir: std.fs.Dir) !std.fs.Dir {
     // TODO(Zig): https://github.com/ziglang/zig/issues/16779
     const ancestors = "./" ++ "../" ** 16;
 
@@ -807,7 +807,7 @@ fn discover_project_root() !std.fs.Dir {
         const ancestor = ancestors[0 .. 2 + 3 * level];
         assert(ancestor[ancestor.len - 1] == '/');
 
-        var current = try std.fs.cwd().openDir(ancestor, .{});
+        var current = try start_dir.openDir(ancestor, .{});
         errdefer current.close();
 
         if (current.statFile("src/shell.zig")) |_| {
